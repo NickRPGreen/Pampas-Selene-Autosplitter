@@ -7,7 +7,6 @@ state("maze"){
     int Area: "maze.exe", 0x3A3EB48;            // Current Area of the Game - 0=Castle, 1=Cyclops
     int Room: "maze.exe", 0x3A3E954;            // Current Room
     int State: "maze.exe", 0xCAB8B0;            // Game State: 0=Main Menu, 1=In Game 
-    int Score: "maze.exe", 0xCEE7E0;            // A variable that transitions from 1-3 as the scoreboard appears
 }
 
 init{
@@ -21,7 +20,7 @@ split{
         vars.Boss = 1;
         return true;
     }
-    if(old.Score == 2 && current.Score == 3) return true;
+    if(old.GlobalTimer == current.GlobalTimer) return true;
 }
 
 start{
