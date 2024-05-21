@@ -1,12 +1,15 @@
 # Pampas-Selene-Autosplitter
 Speedrunning autosplitter for Pampas &amp; Selene: The Maze of Demons
 
-Currently supports the Steam Demo only.
+There are two versions of the autosplitter, the main autosplitter for the game, plus a lite version specifically for the Steam demo.
 
 Features:
-* Only supports Any% - 100% coming soon
-* Starts with IGTs as prologue ends
-* Splits on entering the Cyclops Realm, reaching the Cyclop Boss Room, and the DEMO FINISHED screen appearing
-* Splits are fixed, there are currently no options for turning splits off
-* Resets on returning to the main menu
-* Tracks the game's Game Timer, which should be displayed on LiveSplit as a secondary timer (speedrun in timed in RTA)
+* Full game support
+* Co-op support
+* 100% support  including splits, trackers and percentage values for items, castle exploration and secrets
+* Achievement & Secret splits
+* Settings to toggle every split on or off, plus some additional behaviour modifiers
+* Support for loading saves to ensure splits don't occur on save files completed objectives
+* ASL VAR support for several game statuses and additional variables (requests for more are welcomed)
+* Tooltips for all main branch settings
+* Log entries for each split and other operations for bug testing
