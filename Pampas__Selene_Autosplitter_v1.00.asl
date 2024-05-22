@@ -1,18 +1,13 @@
 /* 
-Pampas & Selene Autosplitter v1.00
+Pampas & Selene Autosplitter v1.01
 Created by NickRPGreen
 Thanks to unepicfran and Jacklifear for support
 
 Changes:
-- Full game support 
-- Co-op support 
-- 100% support  including splits, trackers and percentage values for items, castle exploration and secrets
-- Achievement & Secret splits
-- Settings to toggle every split on or off, plus some additional behaviour modifiers
-- Support for loading saves to ensure splits don't occur on save files completed objectives
-- ASL VAR support for several game statuses and additional variables (requests for more are welcomed)
-- Tooltips for all main branch settings
-- Log entries for each split and other operations for bug testing
+- Fixed Reset being triggered when reaching the Game Over screen by adding a Game Over entry to the Game Status
+- Rewrote split behaviour for Castle Key and Bucket as they are both items you can collect before their quest is triggered
+- Added new OnStart instruction to remove Castle Key and Bucket quests if already collected when loading a save
+- Fixed a bug where the item tracker was adding a "1" to the end of every item name when loading a save
 */
 
 state("maze"){
@@ -47,8 +42,6 @@ startup{
     settings.SetToolTip("lastRune", "If unchecked, will split on collecting every Rune in each Realm");
     settings.Add("doubleItemReceipt", true, "Avoid double splitting for items aquired from quests", "behaviour");
     settings.SetToolTip("doubleItemReceipt", "If using both Quest Splits and Item Splits, prevents double splitting on items obtained from quest completion");
-    settings.Add("doubleItemCollect", true, "Avoid double splitting for items collected for the completion of quests", "behaviour");
-    settings.SetToolTip("doubleItemCollect", "If using both Quest Splits and Item Splits, prevents double splitting on collecting items that are required for quests");
 
     settings.Add("finalSplit", true, "Game Complete");
     settings.SetToolTip("finalSplit", "Splits when the in-game timer stops after the final Lich puzzle");
@@ -332,7 +325,8 @@ update{
 
     if(u.statLst["menuType"].Current == 0) current.gameStatus = "In Game";
     else if(u.statLst["menuType"].Current == 2) current.gameStatus = "Paused";
-    else current.gameStatus = "Main Menu";
+    else if(u.statLst["menuType"].Current == 1) current.gameStatus = "Main Menu";
+    else if(u.statLst["menuType"].Current == 3) current.gameStatus = "Game Over";
 
     // Both Players' Current Realms
     if(current.gameStatus == "Main Menu"){
@@ -446,6 +440,24 @@ onStart{
     u.questTracker.Add("Ares", new List<int> {2,100,3,800,4,100,6,100,8,1000});
     u.questTracker.Add("Zeus", new List<int> {2,200,4,1000});
     u.questTracker.Add("Athena", new List<int> {2,5,100,8,13,16,19,22,25,28,32,1000});
+    
+    // Add already collected items to itemsFound list if loading a save
+    for(int i = 0; i < u.itemNames.Count; i++){
+        if(u.itemLst[u.itemNames[i]].Current == 1) u.itemsFound.Add(u.itemNames[i]);
+    }
+
+    // Set checks on Bucket and Castle Key and remove their quests if already collected when loading a save
+    u.bucketCheck = false;
+    if(u.itemsFound.Contains("Bucket")){
+        u.bucketCheck = true;
+        u.questTracker["Asclepius"].Remove(100);
+    } 
+
+    u.castleKeyCheck = false;
+    if(u.itemsFound.Contains("Castle Key")) {
+        u.castleKeyCheck = true;
+        u.questTracker["Athena"].Remove(100);
+    }
 
     // Remove already completed quests from questTracker if loading a save
     for(int i = 0; i<u.godNames.Count; i++){
@@ -458,11 +470,6 @@ onStart{
         var printAfter = gN + " Loaded To: ";
         for(int k = 0; k<qT.Count ; k++) printAfter = printAfter + qT[k] + ",";
         u.Log(printAfter);
-    }
-    
-    // Add already collected items to itemsFound list if loading a save
-    for(int i = 0; i < u.itemNames.Count; i++){
-        if(u.itemLst[u.itemNames[i]].Current == 1) u.itemsFound.Add(u.itemNames[i]+1);
     }
 
     // Count number of collected achievements upon starting/loading
@@ -585,16 +592,32 @@ split{
                                 return true;
                             }
                         }
-                        else if(u.itemsForQuests.Contains(iN)){
-                            if(settings["doubleItemCollect"] && settings["questCollect "+iN]) return false;
-                            else {
-                                u.Log("SPLIT: Collected "+iN);
-                                return true;
-                            }
+                        else if(u.itemsForQuests.Contains(iN)) return false;
+                        else{
+                            u.Log("SPLIT: Collected "+iN);
+                            return true;
                         }
-                        else return true;
                     }
                 }
+            }
+        }
+
+        // Bucket & Castle Key Splits - these are separate as they can be collected before triggering the quest for them and as such need special behaviour
+        if(u.itemLst["Bucket"].Changed && u.bucketCheck == false){
+            u.bucketCheck = true;
+            u.questTracker["Asclepius"].Remove(100);
+            if(settings["findBucket"] | settings["questCollect Bucket"]){
+                u.Log("SPLIT: Collected Bucket");
+                return true;
+            }
+        }
+
+        if(u.itemLst["Castle Key"].Changed && u.castleKeyCheck == false){
+            u.castleKeyCheck = true;
+            u.questTracker["Athena"].Remove(100);
+            if(settings["findCastle Key"] | settings["questCollect Castle Key"]){
+                u.Log("SPLIT: Collected Castle Key");
+                return true;
             }
         }
 
@@ -604,6 +627,7 @@ split{
             if(u.questLst[gN].Changed | u.questItemLst[gN].Changed){
                 u.Log("CHECK 1 - "+gN.ToString()+": "+u.questLst[gN].Changed.ToString()+"/"+u.questItemLst[gN].Changed.ToString());         
                 for(int j = 0; j < u.questLines[gN].Count; j++){
+                    if(u.questLst[gN][j] == "Collect Bucket" | u.questLst[gN][j] == "Collect Castle Key") return false;
                     if((u.questLst[gN].Changed && u.questLst[gN].Current == u.questTracker[gN][0]) | (u.questItemLst[gN].Changed && (u.questItemLst[gN].Current)*100 == u.questTracker[gN][0])){
                         u.questTracker[gN].RemoveAt(0);
                         if(settings["quest"+u.questLines[gN][j]]){
