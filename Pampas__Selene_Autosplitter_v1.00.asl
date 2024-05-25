@@ -1,13 +1,10 @@
 /* 
-Pampas & Selene Autosplitter v1.01
+Pampas & Selene Autosplitter v1.02
 Created by NickRPGreen
 Thanks to unepicfran and Jacklifear for support
 
 Changes:
-- Fixed Reset being triggered when reaching the Game Over screen by adding a Game Over entry to the Game Status
-- Rewrote split behaviour for Castle Key and Bucket as they are both items you can collect before their quest is triggered
-- Added new OnStart instruction to remove Castle Key and Bucket quests if already collected when loading a save
-- Fixed a bug where the item tracker was adding a "1" to the end of every item name when loading a save
+- Fixed a bug where the new Bucket/Castle Key checks had broken Quest splits
 */
 
 state("maze"){
@@ -627,7 +624,7 @@ split{
             if(u.questLst[gN].Changed | u.questItemLst[gN].Changed){
                 u.Log("CHECK 1 - "+gN.ToString()+": "+u.questLst[gN].Changed.ToString()+"/"+u.questItemLst[gN].Changed.ToString());         
                 for(int j = 0; j < u.questLines[gN].Count; j++){
-                    if(u.questLst[gN][j] == "Collect Bucket" | u.questLst[gN][j] == "Collect Castle Key") return false;
+                    if(u.questLines[gN][j] == "Collect Bucket" | u.questLines[gN][j] == "Collect Castle Key") return false;
                     if((u.questLst[gN].Changed && u.questLst[gN].Current == u.questTracker[gN][0]) | (u.questItemLst[gN].Changed && (u.questItemLst[gN].Current)*100 == u.questTracker[gN][0])){
                         u.questTracker[gN].RemoveAt(0);
                         if(settings["quest"+u.questLines[gN][j]]){
