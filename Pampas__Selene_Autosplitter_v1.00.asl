@@ -1,10 +1,12 @@
 /* 
-Pampas & Selene Autosplitter v1.02
+Pampas & Selene Autosplitter v1.03
 Created by NickRPGreen
-Thanks to unepicfran and Jacklifear for support
+Thanks to unepicfran and Jacklifear for their support, and Plywood_ for testing and reporting
 
 Changes:
-- Fixed a bug where the new Bucket/Castle Key checks had broken Quest splits
+- Altered the split for defeating bosses so it splits upon the death of the boss, rather than the player being booted back to the dungeon entrance
+    - This change has been made as once you've collected the heart, it's faster to teleport out of the dungeon than wait for the game
+- Added in a Boss Defeated tracker so that you won't double split if you defeat a boss and die before you next save the game
 */
 
 state("maze"){
@@ -23,6 +25,7 @@ startup{
     u.roomsVisited = new List<int>(){};     // Adds each visited room to track 100% completion
     u.bossRooms = new List<int>(){0,435,259,294,279,313,333,339,372,398,416,432};   // List of room numbers that each boss appears in
     u.visitBoss = new List<string>(){};     // Tracker that adds each boss room number upon first visiting it
+    u.bossDefeated = new List<int>(){};     // Tracker that adds each boss upon defeating it
     u.maxRunes = 0;    // Total number of runes collected that persists between saves
     
     u.godNames = new List<string>(){"Apollo","Hades","Uranus","Hecate","Asclepius","Ares","Zeus","Athena"};
@@ -415,6 +418,7 @@ onStart{
     u.roomsVisited.Add(154);
     u.itemsFound.Clear();
     u.visitBoss.Clear();
+    u.bossDefeated.Clear();
     u.maxRunes = vars.runesCollected;
     u.maxItems = vars.itemsCollected;
     u.maxSecrets = u.statLst["secretPerc"].Current;
@@ -660,12 +664,14 @@ split{
             for(int i = 1; i < u.realmNames.Count-1; i++){
                 var rN = u.realmNames[i];
                 if(settings["defeat"+rN]){
-                    if(u.bossLst[rN].Old == 1 && u.bossLst[rN].Current == 2){
+                    if(u.bossLst[rN].Old == 0 && u.bossLst[rN].Current == 1 && !u.bossDefeated.Contains(i)){
                         u.Log("SPLIT: Defeated "+rN);
+                        u.bossDefeated.Add(i);
                         return true;
                     }
-                    if(u.bossHealthLst["Lich"].Old > 0 && u.bossHealthLst["Lich"].Current == 0){
+                    if(u.bossHealthLst["Lich"].Old > 0 && u.bossHealthLst["Lich"].Current == 0 && !u.bossDefeated.Contains(i)){
                         u.Log("SPLIT: Defeated Lich");
+                        u.bossDefeated.Add(i);
                         return true;
                     }
                 }
